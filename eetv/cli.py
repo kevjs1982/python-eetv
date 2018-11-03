@@ -90,7 +90,7 @@ def main():
     elif args.action == 'key':
         output = l.press_key(args.key)
     elif args.action == 'test':
-        output = l.media_state
+        output = l.programme_image
     elif args.action == 'vol':
         if args.volume_action == 'up':
             output = l.volume_up()

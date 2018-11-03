@@ -264,10 +264,10 @@ class EETV(object):
         return True
 
     def channel_up(self):
-        return self.press_key(key="ch_down")
+        return self.press_key(key="channel_down")
 
     def channel_down(self):
-        return self.press_key(key="ch_up")
+        return self.press_key(key="channel_up")
 
     def play_pause(self):
         return self.press_key(key="play_pause")
