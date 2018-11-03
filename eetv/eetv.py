@@ -37,8 +37,8 @@ KEYS = {"on_off": "Power",
         "down": "Down",
         "up": "Up",
         "right": "Right",
-        "ch_down": "Channel -",
-        "ch_up": "Channel +",
+        "channel_down": "Channel -",
+        "channel_up": "Channel +",
         "mute": "Mute"
         }
 
