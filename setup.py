@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='eetv',
-    version='0.0.1',
+    version='0.0.2',
     license='GPL3',
     description='Python bindings for the EETV appliance',
     long_description=open('README.rst').read(),
