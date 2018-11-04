@@ -47,7 +47,6 @@ def parse_args():
     subparsers.add_parser('device_name', help='Shows the EETV Box Name')
     subparsers.add_parser('device_mac', help='Shows the EETV Box MAC Address')
     subparsers.add_parser('media_source', help='Shows the EETV Box Active Source')
-    subparsers.add_parser('media_source_details', help='Shows the EETV Box Active Source Details')
     subparsers.add_parser('channellogo', help='Get current channel logo')
     subparsers.add_parser('channels', help='Get list of channels')
     subparsers.add_parser('state', help='Get the current state (on or off)')
@@ -83,14 +82,12 @@ def main():
         output = l.mac_address
     elif args.action == 'media_source':
         output = l.media_source
-    elif args.action == 'media_source_details':
-        output = l.media_source_details
     elif args.action == 'off':
         output = l.turn_off()
     elif args.action == 'key':
         output = l.press_key(args.key)
     elif args.action == 'test':
-        output = l.programme_image
+        output = l.media_state
     elif args.action == 'vol':
         if args.volume_action == 'up':
             output = l.volume_up()

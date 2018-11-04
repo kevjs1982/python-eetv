@@ -44,6 +44,7 @@ KEYS = {"on_off": "Power",
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class EETV(object):
     def __init__(self, hostname, app_key='', port=80, timeout=3, refresh_frequency=60):
         from datetime import timedelta
@@ -68,6 +69,7 @@ class EETV(object):
     @property
     def standby_state(self):
         j = self.get_core_info()
+        print(j)
         # Bit of a cludge as the API doesn't offer an on/off indicator
         # totalSpace is a proxy, when off it's 0, when on it's a non-zero value.
         return j['pvr']['status']['disk']['totalSpace'] > 0
@@ -94,16 +96,24 @@ class EETV(object):
 
     @property
     def media_state(self):
-        return self.media_source
+        if self.is_on is False:
+            return "STANDBY"
+        else:
+            j = self.get_url(self.current_url)
+            speed = int(j.get('info', {}).get('speed', 0))
+            if speed == 0:
+                return "PAUSE"
+            else:
+                return "PLAY"
 
     @property
     def media_position(self):
-        # TODO: FIX Media Position
-        return self.info.get('playedMediaPosition')
+        info = self.get_current_programme_info()
+        return int(info['media_position'])
 
     @property
     def media_type(self):
-        return self.media_state
+        return self.media_source
 
     @property
     def mac_address(self):
@@ -189,7 +199,6 @@ class EETV(object):
             return self.channels
 
     def turn_on(self):
-        # TODO: Turning off when on
         # When turning on there will be approx 30 seconds before the recorder has started up
         # Until then we have no idea if the STB is turned on
         if not self.standby_state:
@@ -241,7 +250,18 @@ class EETV(object):
         return json.dumps(channels) if json_output else channels
 
     def set_channel(self, channel):
-        self.get_url("/Live/Channels/zap", {"zap": channel}, False)
+        lcn = 0
+        if channel.startswith('#'):
+            lcn = int(channel.split('#')[1])
+        else:
+            for channels in self.get_channel_list():
+                if str(channels['name']).lower() == str(channel).lower():
+                    lcn = channels["zap"]
+                    # There can occassionally be duplicate names, e.g. ITV on 802 or Magic TV/Radio
+                    # Prefer the lowest number channel
+                    break
+        if lcn > 0:
+            self.get_url("/Live/Channels/zap", {"zap": lcn}, False)
         return self.get_current_channel()
 
     def press_key(self, key):
@@ -264,10 +284,10 @@ class EETV(object):
         return True
 
     def channel_up(self):
-        return self.press_key(key="channel_down")
+        return self.press_key(key="channel_up")
 
     def channel_down(self):
-        return self.press_key(key="channel_up")
+        return self.press_key(key="channel_down")
 
     def play_pause(self):
         return self.press_key(key="play_pause")
@@ -282,18 +302,29 @@ class EETV(object):
             if source == "rec":
                 return "Recording"
             elif source == "live":
-                return "Freeview TV"
+                return "Freeview"
+            elif source == "timeshift":
+                return "Pausing Freeview"
             elif source is None:
                 return "Menu, Radio, On Demand, EETV"
             else:
                 return source
+
+    @property
+    def get_program_duration(self):
+        info = self.get_current_programme_info()
+        return int(info['media_duration'])
 
     def get_current_programme_info(self):
         if self.standby_state is False:
             return {"State": "Off"}
         else:
             j = self.get_url(self.current_url)
-
+            current_at = int(j.get('timestamp', 0))
+            ends_at = int(j.get('info', {}).get('event', {}).get('endTime', 0))
+            starts_at = int(j.get('info', {}).get('event', {}).get('startTime', 0))
+            duration = ends_at - starts_at
+            play_position = current_at - starts_at
             programme_info = {
                 "thumb": j.get('info', {}).get('event', {}).get('icon', self.default_thumb),
                 "channel_name":  j.get('info', {}).get('event', {}).get('channelName', 'Unknown'),
@@ -301,5 +332,21 @@ class EETV(object):
                 "episode_title": j.get('info', {}).get('event', {}).get('text', 'Unknown'),
                 "programme_title": j.get('info', {}).get('event', {}).get('name', 'Unknown'),
                 "description": j.get('info', {}).get('event', {}).get('description', 'Unknown'),
+                "media_position": play_position,
+                "media_duration": duration
             }
             return programme_info
+
+    def play(self):
+        if self.media_state == "PLAY":
+            return True
+        else:
+            self.press_key("play_pause")
+            return True
+
+    def pause(self):
+        if self.media_state == "PAUSE":
+            return True
+        else:
+            self.press_key("play_pause")
+            return True
